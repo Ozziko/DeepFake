@@ -1,5 +1,5 @@
 # DeepFake
-A spare-time research project I started for my interest, challenge and experience, aiming to create DeepFake videos - copying a person's face/body gestures and voice from one video to another video (of another person). 
+A spare-time research project I started for my interest, challenge and experience, aiming to create DeepFake videos - transferring gestures and voice of one person's video to another's. 
 
 ## Project Roadmap
 **(last update: 2019/06/10)**
