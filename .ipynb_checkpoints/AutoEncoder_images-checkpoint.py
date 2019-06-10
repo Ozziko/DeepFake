@@ -25,7 +25,7 @@ seed_for_dataset_downsampling=0 # integer or None for no seed; for sampling max_
 validation_ratio=0.3 # validation dataset ratio from total dataset length
 
 #batch_size_int_or_ratio_float=1e-2 # if float: batch_size=round(batch_size_over_dataset_length*len(dataset_to_split))
-batch_size_int_or_ratio_float=64 # if int: this is the batch size, should be 2**n
+batch_size_int_or_ratio_float=32 # if int: this is the batch size, should be 2**n
 data_workers=0 # 0 means no multiprocessing in dataloaders
 #data_workers='cpu cores' # sets data_workers=multiprocessing.cpu_count()
 
@@ -47,7 +47,7 @@ loss_name='MSE'
 train_model_else_load_weights=True
 #train_model_else_load_weights=False # instead of training, loads a pre-trained model and uses it
 
-epochs=10
+epochs=30
 learning_rate=1e-1
 momentum=0.9
 
@@ -654,73 +654,22 @@ for phase in ['train','val']:
           
 logger.info('completed model evaluation')
 
-##%% inspecting auto-encoding by batches
-#images_per_row=4
-## end of inputs ---------------------------------------------------------------
-#
-#if __name__=='__main__' or data_workers==0: # required in Windows for multi-processing
-#    samples_batches={}
-#    for phase in ['train','val']:
-#        samples_batch=next(iter(dataloaders[phase]))
-#        samples_batches.update({phase:samples_batch})
-#else:
-#    raise RuntimeError('cannot use multiprocessing (data_workers>0 in dataloaders) in Windows when executed not as main!')
-#
-#model.eval() # set model to evaluate mode
-#for phase in ['train','val']:
-#    samples_batch=samples_batches[phase]
-#    input_images=samples_batch['image array'].to(device)
-#    with torch.set_grad_enabled(False):
-#        output_images=model(input_images)
-#    
-#    # see https://pytorch.org/tutorials/beginner/dcgan_faces_tutorial.html
-#    input_images_grid=np.transpose(vutils.make_grid(
-#            input_images,nrow=images_per_row,padding=5,normalize=True).cpu(),(1,2,0))
-#    output_images_grid=np.transpose(vutils.make_grid(
-#            output_images,nrow=images_per_row,padding=5,normalize=True).cpu(),(1,2,0))
-#    
-#    plt.figure()
-#    plt.subplot(1,2,1)
-#    plt.axis('off')
-#    plt.title('original images')
-#    plt.imshow(input_images_grid)
-#    
-#    plt.subplot(1,2,2)
-#    plt.axis('off')
-#    plt.title('reconstructed images')
-#    plt.imshow(output_images_grid)
-#
-#    plt.suptitle('%s batch'%phase)
-
-#%% inspecting auto-encoding by plotting (building the batches from samples)
-samples_to_plot=20
-#sampling_for_sample_verification='none' # plotting first samples_to_plot samples from datasets (train, val)
-sampling_for_sample_verification='random' # plotting randomly selected samples_to_plot samples from datasets (train, val), using seed_for_sample_verification seed
-seed_for_sample_verification=0
+#%% inspecting auto-encoding by batches
 images_per_row=4
 # end of inputs ---------------------------------------------------------------
 
-# concatenating the samples to inspect into batches
-image_batches={}
-for phase in ['train','val']:
-    if sampling_for_sample_verification=='none':
-        sample_indices_to_plot=range(samples_to_plot)
-    elif sampling_for_sample_verification=='random':
-        random.seed(seed_for_sample_verification)
-        sample_indices_to_plot=random.sample(range(len(datasets[phase])),samples_to_plot)
-    else:
-        raise RuntimeError('unsupported sampling_for_sample_verification input!')
-    
-    image_tensors_list=[]
-    for i,i_sample in enumerate(sample_indices_to_plot):
-        image_array=datasets[phase][i_sample]['image array'].unsqueeze(0)
-        image_tensors_list.append(image_array)
-    image_batches.update({phase:torch.cat(image_tensors_list,0)})
+if __name__=='__main__' or data_workers==0: # required in Windows for multi-processing
+    samples_batches={}
+    for phase in ['train','val']:
+        samples_batch=next(iter(dataloaders[phase]))
+        samples_batches.update({phase:samples_batch})
+else:
+    raise RuntimeError('cannot use multiprocessing (data_workers>0 in dataloaders) in Windows when executed not as main!')
 
-# applying the model, plotting results
 model.eval() # set model to evaluate mode
 for phase in ['train','val']:
-    input_images=image_batches[phase].to(device)
+    samples_batch=samples_batches[phase]
+    input_images=samples_batch['image array'].to(device)
     with torch.set_grad_enabled(False):
         output_images=model(input_images)
     
