@@ -23,7 +23,7 @@ A spare-time research project I started for my interest, challenge and experienc
 9. (0%) combining everything, creating a complete DeepFake video.
 ---
 **I would be glad for any comment, question or discussion!**
-You can contact me privately at oz.livneh@gmail.com or www.linkedin.com/in/oz-livneh
+You can contact me privately at oz.livneh@gmail.com or www.linkedin.com/in/oz-livneh.
 
 Yours,
 
