@@ -4,6 +4,8 @@
 * All rights of this project and my code are reserved to me, Oz Livneh.
 * Feel free to use - for personal use!
 * Use at your own risk ;-)
+
+<<<This script is for R&D, experiments, debugging!>>>
 """
 
 #%% main parameters
@@ -14,7 +16,7 @@ torch_manual_seed=0 # integer or None for no seed; for torch reproducibility, as
 #torch_manual_seed=None
 
 #--------- data -------------
-images_folder_path=r'D:\AI Data\DeepFake\ZioNLight Bibi.mp4 frames'
+images_folder_path=r'D:\AI Data\DeepFake\ZioNLight Bibi.mp4 214x384 frames'
 
 #random_transforms=True # soft data augmentation - color jitter (no random cropping or flipping - to keep all images aligned)
 random_transforms=False
@@ -38,8 +40,7 @@ dataloader_shuffle=True # samples are shuffled inside each dataloader, on each e
 
 #--------- net -------------
 #net_architecture='simple auto-encoder'
-#net_architecture='bigger auto-encoder'
-net_architecture='v3 auto-encoder'
+net_architecture='experimental auto-encoder'
 
 loss_name='MSE'
 
@@ -47,7 +48,7 @@ loss_name='MSE'
 train_model_else_load_weights=True
 #train_model_else_load_weights=False # instead of training, loads a pre-trained model and uses it
 
-epochs=10
+epochs=3
 learning_rate=1e-1
 momentum=0.9
 
@@ -166,6 +167,7 @@ def training_stats_plot(stats_dict,fig,loss_subplot,MSE_subplot):
     loss_subplot.plot(epoch_train_stats_df['loss per sample'],'k-o',label='epoch train')
     loss_subplot.plot(epoch_val_stats_df['loss per sample'],'r-o',label='epoch val')
     loss_subplot.set_ylabel('loss per sample')
+    loss_subplot.set_xlabel('epoch')
     loss_subplot.grid()
     loss_subplot.legend(loc='best')
     if plot_loss_in_log_scale:
@@ -177,6 +179,7 @@ def training_stats_plot(stats_dict,fig,loss_subplot,MSE_subplot):
     MSE_subplot.plot(epoch_train_stats_df['MSE']**0.5,'k-o',label='epoch train')
     MSE_subplot.plot(epoch_val_stats_df['MSE']**0.5,'r-o',label='epoch val')
     MSE_subplot.set_ylabel('sqrt(MSE)')
+    MSE_subplot.set_xlabel('epoch')
     MSE_subplot.grid()
     MSE_subplot.legend(loc='best')
     fig.canvas.draw()
@@ -376,43 +379,7 @@ if net_architecture=='simple auto-encoder':
             x=self.decoder(x)
             return x
     model=autoencoder()
-elif net_architecture=='bigger auto-encoder':
-    class autoencoder(nn.Module):
-        def __init__(self):
-            super(autoencoder, self).__init__()
-            self.encoder = nn.Sequential(
-                nn.Conv2d(3,16,4,stride=2,bias=False),
-                nn.ReLU(True),
-                nn.BatchNorm2d(16),
-                
-                nn.Conv2d(16,8,4,stride=1,bias=False),
-                nn.ReLU(True),
-                nn.BatchNorm2d(8),
-                
-                nn.Conv2d(8,2,4,stride=2,bias=False),
-                nn.ReLU(True),
-                nn.BatchNorm2d(2),
-            )
-            self.decoder = nn.Sequential(
-                nn.ConvTranspose2d(2,8,4,stride=2,bias=False),
-                nn.ReLU(True),
-                nn.BatchNorm2d(8),
-                
-                nn.ConvTranspose2d(8,16,4,stride=1,bias=False),
-                nn.ReLU(True),
-                nn.BatchNorm2d(16),
-                
-                nn.ConvTranspose2d(16,3,4,stride=2,bias=False),
-                nn.ReLU(True),
-                nn.BatchNorm2d(3),
-            )
-    
-        def forward(self,x):
-            x=self.encoder(x)
-            x=self.decoder(x)
-            return x
-    model=autoencoder()
-elif net_architecture=='v3 auto-encoder':
+elif net_architecture=='experimental auto-encoder':
     class autoencoder(nn.Module):
         def __init__(self):
             super(autoencoder, self).__init__()
@@ -485,7 +452,12 @@ if train_model_else_load_weights and (__name__=='__main__' or data_workers==0):
                      'val':{'epoch metrics':{}}}
     
     total_batches=epochs*(dataloader_batches_number['train']+dataloader_batches_number['val'])
-    logger.info("started training '%s' net on %s"%(net_architecture,device))
+    
+    pytorch_total_wts=sum(p.numel() for p in model.parameters())
+    pytorch_trainable_wts=sum(p.numel() for p in model.parameters() if p.requires_grad)
+    
+    logger.info("started training '%s' net on %s, trainable/total weigths: %d/%d"%(
+        net_architecture,device,pytorch_trainable_wts,pytorch_total_wts))
     tic=time()
     for epoch in range(epochs):
         for phase in ['train','val']:
@@ -534,9 +506,6 @@ if train_model_else_load_weights and (__name__=='__main__' or data_workers==0):
                 if phase=='train' and i_batch%period_in_batches_to_log_loss==(period_in_batches_to_log_loss-1):
                     loss_since_last_log_per_sample=loss_since_last_log/samples_processed_since_last_log
                     MSE_since_last_log=squared_error_since_last_log/samples_processed_since_last_log
-                    stats_dict[phase]['running metrics'].update({pd.Timestamp.now():
-                        {'epoch':epoch+1,'batch':i_batch+1,'loss per sample':loss_since_last_log_per_sample,
-                         'MSE':MSE_since_last_log}})
             
                     completed_batches=epoch*(dataloader_batches_number['train']+dataloader_batches_number['val'])+(i_batch+1)
                     completed_batches_progress=completed_batches/total_batches
@@ -550,6 +519,11 @@ if train_model_else_load_weights and (__name__=='__main__' or data_workers==0):
                                 MSE_since_last_log,MSE_since_last_log**0.5,
                                 expected_remainder_time.hours,expected_remainder_time.remainder_minutes,expected_remainder_time.remainder_seconds))
                     
+                    partial_epoch=epoch+completed_batches_progress
+                    stats_dict[phase]['running metrics'].update({partial_epoch:
+                        {'batch':i_batch+1,'loss per sample':loss_since_last_log_per_sample,
+                         'MSE':MSE_since_last_log}})
+                    
                     loss_since_last_log=0.0 # must be a float
                     squared_error_since_last_log=0.0
                     samples_processed_since_last_log=0
@@ -558,9 +532,8 @@ if train_model_else_load_weights and (__name__=='__main__' or data_workers==0):
             epoch_loss_per_sample=epoch_loss/dataset_samples_number[phase]
             epoch_MSE=epoch_squared_error/dataset_samples_number[phase]
             
-            stats_dict[phase]['epoch metrics'].update({pd.Timestamp.now():
-                        {'epoch':epoch,
-                         'loss per sample':epoch_loss_per_sample,
+            stats_dict[phase]['epoch metrics'].update({epoch:
+                        {'loss per sample':epoch_loss_per_sample,
                          'MSE':epoch_MSE}})
             if phase=='val':
                 if best_model_criterion=='min val epoch MSE':
@@ -591,11 +564,9 @@ if train_model_else_load_weights and (__name__=='__main__' or data_workers==0):
                 print('-'*10)
     toc=time()
     elapsed_sec=toc-tic
-    pytorch_total_wts=sum(p.numel() for p in model.parameters())
-    pytorch_trainable_wts=sum(p.numel() for p in model.parameters() if p.requires_grad)
 
-    logger.info('finished training %d epochs in %dm:%.1fs, trainable/total weigths: %d/%d'%(
-            epochs,elapsed_sec//60,elapsed_sec%60,pytorch_trainable_wts,pytorch_total_wts))
+    logger.info('finished training %d epochs in %dm:%.1fs'%(
+            epochs,elapsed_sec//60,elapsed_sec%60))
     if return_to_best_weights_in_the_end:
         model.load_state_dict(best_model_wts)
         logger.info("loaded weights of best model according to '%s' criterion: best value %.3f achieved in epoch %d"%(
@@ -644,7 +615,7 @@ for phase in ['train','val']:
             batch_squared_error=((output_images-input_images)**2).sum()
             batch_squared_error=batch_squared_error.item()
         epoch_squared_error+=batch_squared_error
-        
+    
     # epoch stats
     epoch_loss_per_sample=epoch_loss/dataset_samples_number[phase]
     epoch_MSE=epoch_squared_error/dataset_samples_number[phase]
@@ -726,9 +697,9 @@ for phase in ['train','val']:
     
     # see https://pytorch.org/tutorials/beginner/dcgan_faces_tutorial.html
     input_images_grid=np.transpose(vutils.make_grid(
-            input_images,nrow=images_per_row,padding=5,normalize=True).cpu(),(1,2,0))
+            input_images,nrow=images_per_row,padding=5,scale_each=True,normalize=True).cpu(),(1,2,0))
     output_images_grid=np.transpose(vutils.make_grid(
-            output_images,nrow=images_per_row,padding=5,normalize=True).cpu(),(1,2,0))
+            output_images,nrow=images_per_row,padding=5,scale_each=True,normalize=True).cpu(),(1,2,0))
     
     plt.figure()
     plt.subplot(1,2,1)
