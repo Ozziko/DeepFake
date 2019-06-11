@@ -156,7 +156,7 @@ def plot_from_torch_dataset(sample_indices_to_plot,torch_dataset,
         plt.yticks(ticks=[])
     plt.show()
 
-def training_stats_plot(stats_dict,fig,loss_subplot,MSE_subplot):
+def training_stats_plot(stats_dict,fig,loss_subplot,MSE_subplot,plot_loss_in_log_scale=False):
     running_stats_df=pd.DataFrame.from_dict(stats_dict['train']['running metrics'],orient='index')
     epoch_train_stats_df=pd.DataFrame.from_dict(stats_dict['train']['epoch metrics'],orient='index')
     epoch_val_stats_df=pd.DataFrame.from_dict(stats_dict['val']['epoch metrics'],orient='index')
@@ -182,6 +182,8 @@ def training_stats_plot(stats_dict,fig,loss_subplot,MSE_subplot):
     MSE_subplot.set_xlabel('epoch')
     MSE_subplot.grid()
     MSE_subplot.legend(loc='best')
+    if plot_loss_in_log_scale:
+        MSE_subplot.set_yscale('log')
     fig.canvas.draw()
 
 class remainder_time:
