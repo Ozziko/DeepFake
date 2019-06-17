@@ -5,7 +5,9 @@
 * Feel free to use - for personal use!
 * Use at your own risk ;-)
 
-<<<This script is for R&D, experiments, debugging!>>>
+<<<This script is for R&D, experiments, debugging>>>
+This script can be run entirely, or executed by sections (for example in Spyder).
+
 """
 
 #%% main parameters
@@ -230,7 +232,7 @@ source: https://pytorch.org/docs/stable/torchvision/transforms.html
 """
 image_filenames=os.listdir(images_folder_path)
 
-if max_dataset_length>0:
+if max_dataset_length>0 and max_dataset_length<len(image_filenames):
     user_data_approval=input('ATTENTION: downsampling is chosen - building a dataset by sampling only max_dataset_length=%d samples from all available data! approve? y/[n] '%(round(max_dataset_length)))
     if user_data_approval!='y':
         raise RuntimeError('user did not approve dataset max_dataset_length sampling!')
